@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from google import genai
 from mandates import IntentMandate, check_cart_against_intent
 import razorpay
+import webbrowser
+
 
 load_dotenv()
 
@@ -89,6 +91,7 @@ document.getElementById('paybtn').onclick = function(e) {{
         f.write(html_content)
 
     print("checkout.html has been updated automatically with this order.")
+    webbrowser.open("checkout.html")
     return order
 
 if __name__ == "__main__":
