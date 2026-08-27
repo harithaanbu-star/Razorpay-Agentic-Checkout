@@ -1,37 +1,26 @@
 <!DOCTYPE html>
 <html>
 <body>
-
-<button id="paybtn">Pay ₹500</button>
-
+<button id="paybtn">Pay ₹220 for Green Tea 100 bags</button>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
 <script>
 document.getElementById('paybtn').onclick = function(e) {
-
   var options = {
     "key": "rzp_test_TUmjtljLFiVOIN",
-    "amount": "50000",
+    "amount": "22000",
     "currency": "INR",
-    "order_id": "order_TUdpg7nAw0PyS2",
-
+    "order_id": "order_TUsiryHxacvu6h",
     "prefill": {
       "name": "Test User",
       "contact": "+91 9876543210"
     },
-
     "handler": function (response) {
-      alert(
-        "Payment success!\n\n" +
-        "Payment ID: " + response.razorpay_payment_id
-      );
+      alert("Payment success!\n\nPayment ID: " + response.razorpay_payment_id);
     }
   };
-
   var rzp = new Razorpay(options);
   rzp.open();
 }
 </script>
-
 </body>
 </html>

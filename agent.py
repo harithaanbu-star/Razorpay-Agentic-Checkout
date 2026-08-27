@@ -49,13 +49,46 @@ def create_and_pay_order(item, cart_total):
         auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
     )
     order = client_razorpay.order.create({
-        "amount": cart_total * 100,  # Razorpay uses paise
+        "amount": cart_total * 100,
         "currency": "INR",
         "receipt": f"agentic_{item['id']}"
     })
     print("\n--- Razorpay Order Created ---")
     print("Order ID:", order["id"])
     print("Amount:", order["amount"] / 100, "INR")
+
+    # Automatically generate a matching checkout page
+    html_content = f"""<!DOCTYPE html>
+<html>
+<body>
+<button id="paybtn">Pay ₹{cart_total} for {item['name']}</button>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.getElementById('paybtn').onclick = function(e) {{
+  var options = {{
+    "key": "{os.getenv('RAZORPAY_KEY_ID')}",
+    "amount": "{order['amount']}",
+    "currency": "INR",
+    "order_id": "{order['id']}",
+    "prefill": {{
+      "name": "Test User",
+      "contact": "+91 9876543210"
+    }},
+    "handler": function (response) {{
+      alert("Payment success!\\n\\nPayment ID: " + response.razorpay_payment_id);
+    }}
+  }};
+  var rzp = new Razorpay(options);
+  rzp.open();
+}}
+</script>
+</body>
+</html>"""
+
+    with open("checkout.html", "w" , encoding="utf-8") as f:
+        f.write(html_content)
+
+    print("checkout.html has been updated automatically with this order.")
     return order
 
 if __name__ == "__main__":
