@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<button id="paybtn">Pay ₹500</button>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+document.getElementById('paybtn').onclick = function(e) {
+
+  var options = {
+    "key": "rzp_test_TUGxLF38mdg4gp",
+    "amount": "50000",
+    "currency": "INR",
+    "order_id": "order_TUdpg7nAw0PyS2",
+
+    "prefill": {
+      "name": "Test User",
+      "contact": "+91 9876543210"
+    },
+
+    "handler": function (response) {
+      alert(
+        "Payment success!\n\n" +
+        "Payment ID: " + response.razorpay_payment_id
+      );
+    }
+  };
+
+  var rzp = new Razorpay(options);
+  rzp.open();
+}
+</script>
+
+</body>
+</html>
