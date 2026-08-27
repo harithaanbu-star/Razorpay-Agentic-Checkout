@@ -1,0 +1,26 @@
+[
+  {
+    "id": "sku_001",
+    "name": "Roasted Almonds 500g",
+    "price": 350,
+    "category": "snacks",
+    "stock": 20,
+    "description": "Premium roasted almonds, no added salt"
+  },
+  {
+    "id": "sku_002",
+    "name": "Organic Honey 250ml",
+    "price": 280,
+    "category": "grocery",
+    "stock": 15,
+    "description": "Raw, unfiltered organic honey"
+  },
+  {
+    "id": "sku_003",
+    "name": "Green Tea 100 bags",
+    "price": 220,
+    "category": "beverages",
+    "stock": 30,
+    "description": "Premium green tea bags"
+  }
+]
