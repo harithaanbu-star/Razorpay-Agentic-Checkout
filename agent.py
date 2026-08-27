@@ -104,7 +104,7 @@ if __name__ == "__main__":
         expiry="2026-12-31"
     )
 
-    user_request = "I want something for my morning tea routine, under 300 rupees"
+    user_request = "I need something for skincare or health, like honey"
     result = ask_agent_to_pick_item(user_request, catalog)
     print("Agent response:\n", result)
 
