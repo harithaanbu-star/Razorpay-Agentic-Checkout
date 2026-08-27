@@ -19,3 +19,10 @@ class PaymentMandate:
         self.cart = cart
         self.signature = signature
         self.timestamp = timestamp
+
+def check_cart_against_intent(cart_total, cart_category, intent: IntentMandate):
+    if cart_total > intent.max_amount:
+        return False, f"Cart total ₹{cart_total} exceeds allowed max of ₹{intent.max_amount}"
+    if cart_category not in intent.allowed_categories:
+        return False, f"Category '{cart_category}' is not in allowed categories {intent.allowed_categories}"
+    return True, "Within bounds"
