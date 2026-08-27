@@ -3,6 +3,7 @@ import json
 from dotenv import load_dotenv
 from google import genai
 from mandates import IntentMandate, check_cart_against_intent
+import razorpay
 
 load_dotenv()
 
@@ -43,6 +44,19 @@ def get_human_approval(item, cart_total):
     decision = input("Approve this purchase? (yes/no): ").strip().lower()
     return decision == "yes"
 
+def create_and_pay_order(item, cart_total):
+    client_razorpay = razorpay.Client(
+        auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+    )
+    order = client_razorpay.order.create({
+        "amount": cart_total * 100,  # Razorpay uses paise
+        "currency": "INR",
+        "receipt": f"agentic_{item['id']}"
+    })
+    print("\n--- Razorpay Order Created ---")
+    print("Order ID:", order["id"])
+    print("Amount:", order["amount"] / 100, "INR")
+    return order
 
 if __name__ == "__main__":
     catalog = load_catalog()
@@ -77,5 +91,6 @@ if __name__ == "__main__":
             approved = get_human_approval(item, cart_total)
             if approved:
                 print("Human approved. Ready to proceed to payment. ✅")
+                order = create_and_pay_order(item, cart_total)
             else:
                 print("Human rejected. Transaction cancelled. ❌")
