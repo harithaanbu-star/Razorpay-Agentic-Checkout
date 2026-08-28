@@ -1,5 +1,6 @@
 from fastapi import FastAPI,Request
 app=FastAPI()
+processed_payment_ids = set()
 @app.get("/")
 def home():
     return {
@@ -10,7 +11,13 @@ def home():
 async def razorpay_webhook(request: Request):
     data = await request.json()
     event = data.get("event")
-
+    
+    payment_id = data.get("payload", {}).get("payment", {}).get("entity", {}).get("id")
+    if payment_id and payment_id in processed_payment_ids:
+       print(f"Duplicate webhook ignored for {payment_id}")
+       return {"status": "already_processed"}
+    if payment_id:
+       processed_payment_ids.add(payment_id)
     if event == "payment.captured":
         payment = data["payload"]["payment"]["entity"]
         print(f"✅ Payment SUCCESS — ID: {payment['id']}, Amount: ₹{payment['amount']/100}")

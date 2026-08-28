@@ -99,12 +99,11 @@ if __name__ == "__main__":
     print("Loaded catalog:", catalog)
 
     intent = IntentMandate(
-        max_amount=300,
+        max_amount=100,
         allowed_categories=["beverages", "snacks", "grocery"],
         expiry="2026-12-31"
     )
-
-    user_request = "I need something for skincare or health, like honey"
+    user_request = "I want the roasted almonds"
     result = ask_agent_to_pick_item(user_request, catalog)
     print("Agent response:\n", result)
 
