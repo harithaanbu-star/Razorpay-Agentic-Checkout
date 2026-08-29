@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Agentic Checkout Demo</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+  h2 { color: #2b2b2b; }
+  input { width: 70%; padding: 10px; }
+  button { padding: 10px 16px; margin-left: 5px; cursor: pointer; }
+  .box { border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 8px; }
+  .log { background: #f7f7f7; padding: 10px; height: 200px; overflow-y: auto; font-size: 13px; margin-top: 20px; border-radius: 8px; }
+  .approve { background: #2ecc71; color: white; border: none; }
+  .reject { background: #e74c3c; color: white; border: none; }
+</style>
+</head>
+<body>
+
+<h2>🛒 AI Buyer Agent — Merchant Checkout</h2>
+
+<input type="text" id="userRequest" placeholder="e.g. I want something for my morning tea routine">
+<button onclick="sendRequest()">Ask Agent</button>
+
+<div class="box" id="resultBox" style="display:none;"></div>
+
+<h3>📋 Audit Trail</h3>
+<div class="log" id="auditLog">Waiting for activity...</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+
+async function sendRequest() {
+  const message = document.getElementById('userRequest').value;
+  const res = await fetch('/request', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message})
+  });
+  const data = await res.json();
+  const box = document.getElementById('resultBox');
+  box.style.display = 'block';
+
+  if (data.status === 'no_match') {
+    box.innerHTML = `<b>No match found.</b><br>${data.reasoning}`;
+  } else if (data.status === 'blocked') {
+    box.innerHTML = `<b>🚫 Blocked by spend policy</b><br>Item: ${data.item.name} (₹${data.item.price})<br>Reason: ${data.reason}`;
+  } else if (data.status === 'awaiting_approval') {
+    box.innerHTML = `
+      <b>Agent wants to buy:</b> ${data.item.name} for ₹${data.item.price}<br>
+      <i>${data.reasoning}</i><br><br>
+      <button class="approve" onclick="approve()">✅ Approve</button>
+      <button class="reject" onclick="reject()">❌ Reject</button>
+    `;
+  }
+  refreshLog();
+}
+
+async function approve() {
+  const res = await fetch('/approve', {method: 'POST'});
+  const data = await res.json();
+  const box = document.getElementById('resultBox');
+
+  if (data.status === 'order_created') {
+    box.innerHTML = `<b>Order created (₹${data.amount/100}). Opening payment...</b>`;
+    openCheckout(data);
+  }
+  refreshLog();
+}
+
+async function reject() {
+  await fetch('/reject', {method: 'POST'});
+  document.getElementById('resultBox').innerHTML = '<b>Rejected. No payment made.</b>';
+  refreshLog();
+}
+
+function openCheckout(data) {
+  const options = {
+    key: data.key_id,
+    amount: data.amount,
+    currency: "INR",
+    order_id: data.order_id,
+    name: "Agentic Checkout Demo",
+    description: data.item_name,
+    handler: function (response) {
+      document.getElementById('resultBox').innerHTML =
+        `<b>✅ Payment Successful!</b><br>Payment ID: ${response.razorpay_payment_id}`;
+      refreshLog();
+    }
+  };
+  const rzp = new Razorpay(options);
+  rzp.open();
+}
+
+async function refreshLog() {
+  const res = await fetch('/audit');
+  const data = await res.json();
+  document.getElementById('auditLog').innerHTML = data.log.map(l => `• ${l}`).join('<br>');
+}
+
+refreshLog();
+</script>
+
+</body>
+</html>
