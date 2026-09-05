@@ -1,3 +1,9 @@
+   # NOTE: This is the original terminal-based prototype used during early development.
+   # The full working product is now main.py + index.html (real web interface).
+   # Kept here to show project progression.
+
+
+
 import os
 import json
 from dotenv import load_dotenv

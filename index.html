@@ -1,102 +1,639 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <title>Agentic Checkout Demo</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
-  h2 { color: #2b2b2b; }
-  input { width: 70%; padding: 10px; }
-  button { padding: 10px 16px; margin-left: 5px; cursor: pointer; }
-  .box { border: 1px solid #ddd; padding: 15px; margin-top: 15px; border-radius: 8px; }
-  .log { background: #f7f7f7; padding: 10px; height: 200px; overflow-y: auto; font-size: 13px; margin-top: 20px; border-radius: 8px; }
-  .approve { background: #2ecc71; color: white; border: none; }
-  .reject { background: #e74c3c; color: white; border: none; }
-</style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+
+h2 {
+color: #2b2b2b;
+}
+
+input {
+width: 70%;
+padding: 10px;
+}
+
+button {
+padding: 10px 16px;
+margin-left: 5px;
+cursor: pointer;
+}
+
+.box {
+border: 1px solid #ddd;
+padding: 15px;
+margin-top: 15px;
+border-radius: 8px;
+}
+
+.log {
+background: #f7f7f7;
+padding: 10px;
+height: 200px;
+overflow-y: auto;
+font-size: 13px;
+margin-top: 20px;
+border-radius: 8px;
+}
+
+.approve {
+background: #2ecc71;
+color: white;
+border: none;
+}
+
+.reject {
+background: #e74c3c;
+color: white;
+border: none;
+}
+
+.choose {
+background: #333;
+color: white;
+border: none;
+}
+
+.product {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 12px 0;
+border-top: 1px dotted #ddd;
+}
+
+.product:first-child {
+border-top: none;
+}
+
+.product-info {
+flex: 1;
+}
+
+.product-name {
+font-weight: bold;
+}
+
+.price {
+color: #555;
+font-size: 14px;
+margin-top: 4px;
+}
+
+.product-actions {
+display: flex;
+align-items: center;
+gap: 5px;
+}
+
+.quantity {
+width: 55px;
+padding: 7px;
+box-sizing: border-box;
+}
+
+.reasoning {
+margin-bottom: 12px;
+color: #555;
+}
+
+.loading {
+color: #555;
+}
+
+.error {
+color: #c0392b;
+}
+
+.blocked {
+color: #c0392b;
+}
+
+.success {
+color: #27ae60;
+} </style>
+
 </head>
+
 <body>
 
 <h2>🛒 AI Buyer Agent — Merchant Checkout</h2>
 
-<input type="text" id="userRequest" placeholder="e.g. I want something for my morning tea routine">
+<input
+type="text"
+id="userRequest"
+placeholder="e.g. I want something for my morning tea routine"
+
+>
+
 <button onclick="sendRequest()">Ask Agent</button>
 
 <div class="box" id="resultBox" style="display:none;"></div>
 
 <h3>📋 Audit Trail</h3>
-<div class="log" id="auditLog">Waiting for activity...</div>
+
+<div class="log" id="auditLog">
+  Waiting for activity...
+</div>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
 
 async function sendRequest() {
-  const message = document.getElementById('userRequest').value;
-  const res = await fetch('/request', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({message})
-  });
-  const data = await res.json();
+
+  const message = document
+    .getElementById('userRequest')
+    .value
+    .trim();
+
+  if (!message) {
+    return;
+  }
+
   const box = document.getElementById('resultBox');
+
   box.style.display = 'block';
 
-  if (data.status === 'no_match') {
-    box.innerHTML = `<b>No match found.</b><br>${data.reasoning}`;
-  } else if (data.status === 'blocked') {
-    box.innerHTML = `<b>🚫 Blocked by spend policy</b><br>Item: ${data.item.name} (₹${data.item.price})<br>Reason: ${data.reason}`;
-  } else if (data.status === 'awaiting_approval') {
+  box.innerHTML = `
+    <div class="loading">
+      🤖 Agent is finding matching products...
+    </div>
+  `;
+
+  try {
+
+    const res = await fetch('/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: message
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'options') {
+
+      showOptions(
+        data.items,
+        data.reasoning
+      );
+
+    } else if (data.status === 'no_match') {
+
+      box.innerHTML = `
+        <b>No matching product found.</b>
+        <br><br>
+        ${data.reasoning}
+      `;
+
+    } else if (data.status === 'error') {
+
+      box.innerHTML = `
+        <b class="error">Something went wrong.</b>
+        <br><br>
+        ${data.message}
+      `;
+
+    } else {
+
+      box.innerHTML = `
+        <b>Unexpected response from server.</b>
+      `;
+    }
+
+  } catch (error) {
+
     box.innerHTML = `
-      <b>Agent wants to buy:</b> ${data.item.name} for ₹${data.item.price}<br>
-      <i>${data.reasoning}</i><br><br>
-      <button class="approve" onclick="approve()">✅ Approve</button>
-      <button class="reject" onclick="reject()">❌ Reject</button>
+      <b class="error">
+        Could not reach the server.
+      </b>
+      <br><br>
+      Make sure FastAPI/Uvicorn is running.
     `;
   }
+
   refreshLog();
 }
 
-async function approve() {
-  const res = await fetch('/approve', {method: 'POST'});
-  const data = await res.json();
+
+function showOptions(items, reasoning) {
+
   const box = document.getElementById('resultBox');
 
-  if (data.status === 'order_created') {
-    box.innerHTML = `<b>Order created (₹${data.amount/100}). Opening payment...</b>`;
-    openCheckout(data);
+  let html = `
+    <b>🤖 Agent found matching products</b>
+    <br><br>
+
+    <div class="reasoning">
+      ${reasoning}
+    </div>
+  `;
+
+  items.forEach(item => {
+
+    html += `
+      <div class="product">
+
+        <div class="product-info">
+
+          <div class="product-name">
+            ${item.name}
+          </div>
+
+          <div class="price">
+            ₹${item.price} each
+          </div>
+
+        </div>
+
+        <div class="product-actions">
+
+          <input
+            type="number"
+            min="1"
+            value="1"
+            class="quantity"
+            id="qty-${item.id}"
+          >
+
+          <button
+            class="choose"
+            onclick="selectItem('${item.id}')"
+          >
+            Choose
+          </button>
+
+        </div>
+
+      </div>
+    `;
+  });
+
+  box.innerHTML = html;
+}
+
+
+async function selectItem(itemId) {
+
+  const quantityInput = document.getElementById(
+    `qty-${itemId}`
+  );
+
+  let quantity = parseInt(
+    quantityInput.value
+  );
+
+  if (!quantity || quantity < 1) {
+    quantity = 1;
   }
+
+  const box = document.getElementById('resultBox');
+
+  box.innerHTML = `
+    <div class="loading">
+      Checking purchase against spending policy...
+    </div>
+  `;
+
+  try {
+
+    const res = await fetch('/select', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        item_id: itemId,
+        quantity: quantity
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'blocked') {
+
+      box.innerHTML = `
+        <b class="blocked">
+          🚫 Purchase blocked by spend policy
+        </b>
+
+        <br><br>
+
+        <b>Item:</b>
+        ${data.item.name}
+
+        <br>
+
+        <b>Quantity:</b>
+        ${data.quantity}
+
+        <br>
+
+        <b>Total:</b>
+        ₹${data.total}
+
+        <br><br>
+
+        <b>Reason:</b>
+        ${data.reason}
+      `;
+
+    } else if (data.status === 'awaiting_approval') {
+
+      showApproval(data);
+
+    } else if (data.status === 'error') {
+
+      box.innerHTML = `
+        <b class="error">
+          Something went wrong.
+        </b>
+
+        <br><br>
+
+        ${data.message}
+      `;
+
+    } else {
+
+      box.innerHTML = `
+        <b class="error">
+          Unexpected response from server.
+        </b>
+      `;
+    }
+
+  } catch (error) {
+
+    box.innerHTML = `
+      <b class="error">
+        Could not reach the server.
+      </b>
+    `;
+  }
+
   refreshLog();
 }
+
+
+function showApproval(data) {
+
+  const box = document.getElementById('resultBox');
+
+  box.innerHTML = `
+    <b>🛒 Agent wants to buy:</b>
+
+    <br><br>
+
+    <b>Product:</b>
+    ${data.item.name}
+
+    <br>
+
+    <b>Quantity:</b>
+    ${data.quantity}
+
+    <br>
+
+    <b>Total:</b>
+    ₹${data.total}
+
+    <br><br>
+
+    <span class="success">
+      ✅ Within spending bounds
+    </span>
+
+    <br><br>
+
+    <b>Human approval required</b>
+
+    <br><br>
+
+    <button
+      class="approve"
+      onclick="approve()"
+    >
+      ✅ Approve
+    </button>
+
+    <button
+      class="reject"
+      onclick="reject()"
+    >
+      ❌ Reject
+    </button>
+  `;
+}
+
+
+async function approve() {
+
+  const box = document.getElementById('resultBox');
+
+  box.innerHTML = `
+    <div class="loading">
+      Creating Razorpay order...
+    </div>
+  `;
+
+  try {
+
+    const res = await fetch('/approve', {
+      method: 'POST'
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'order_created') {
+
+      box.innerHTML = `
+        <b>
+          Order created
+        </b>
+
+        <br><br>
+
+        Amount:
+        ₹${data.amount / 100}
+
+        <br>
+
+        Opening payment...
+      `;
+
+      openCheckout(data);
+
+    } else {
+
+      box.innerHTML = `
+        <b class="error">
+          ${data.message || 'Could not create order.'}
+        </b>
+      `;
+    }
+
+  } catch (error) {
+
+    box.innerHTML = `
+      <b class="error">
+        Could not reach the server.
+      </b>
+    `;
+  }
+
+  refreshLog();
+}
+
 
 async function reject() {
-  await fetch('/reject', {method: 'POST'});
-  document.getElementById('resultBox').innerHTML = '<b>Rejected. No payment made.</b>';
+
+  const box = document.getElementById('resultBox');
+
+  try {
+
+    await fetch('/reject', {
+      method: 'POST'
+    });
+
+    box.innerHTML = `
+      <b>
+        ❌ Purchase rejected.
+      </b>
+
+      <br><br>
+
+      No order created.
+      <br>
+      No payment made.
+    `;
+
+  } catch (error) {
+
+    box.innerHTML = `
+      <b class="error">
+        Could not reach the server.
+      </b>
+    `;
+  }
+
   refreshLog();
 }
 
+
 function openCheckout(data) {
+
   const options = {
+
     key: data.key_id,
+
     amount: data.amount,
+
     currency: "INR",
+
     order_id: data.order_id,
+
     name: "Agentic Checkout Demo",
+
     description: data.item_name,
-    handler: function (response) {
-      document.getElementById('resultBox').innerHTML =
-        `<b>✅ Payment Successful!</b><br>Payment ID: ${response.razorpay_payment_id}`;
+
+    theme: {
+      color: "#0F6B5C"
+    },
+
+    handler: function(response) {
+
+      document.getElementById(
+        'resultBox'
+      ).innerHTML = `
+        <b class="success">
+          ✅ Payment Successful!
+        </b>
+
+        <br><br>
+
+        Payment ID:
+        ${response.razorpay_payment_id}
+      `;
+
       refreshLog();
+    },
+
+    modal: {
+
+      ondismiss: function() {
+
+        document.getElementById(
+          'resultBox'
+        ).innerHTML = `
+          <b class="error">
+            Payment window closed.
+          </b>
+        `;
+
+        refreshLog();
+      }
     }
   };
+
   const rzp = new Razorpay(options);
+
   rzp.open();
 }
 
+
 async function refreshLog() {
-  const res = await fetch('/audit');
-  const data = await res.json();
-  document.getElementById('auditLog').innerHTML = data.log.map(l => `• ${l}`).join('<br>');
+
+  try {
+
+    const res = await fetch('/audit');
+
+    const data = await res.json();
+
+    const logBox = document.getElementById(
+      'auditLog'
+    );
+
+    if (!data.log || data.log.length === 0) {
+
+      logBox.innerHTML =
+        'Waiting for activity...';
+
+      return;
+    }
+
+    logBox.innerHTML = data.log
+      .map(
+        (entry, index) =>
+          `• ${String(index + 1).padStart(2, '0')} · ${entry}`
+      )
+      .join('<br>');
+
+    logBox.scrollTop = logBox.scrollHeight;
+
+  } catch (error) {
+
+    document.getElementById(
+      'auditLog'
+    ).innerHTML =
+      'Unable to load audit log.';
+  }
 }
 
+
 refreshLog();
+
 </script>
 
 </body>
